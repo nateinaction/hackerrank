@@ -8,13 +8,14 @@ import (
 )
 
 func main() {
-    var nodes map[int][]int
-    nodes = make(map[int][]int) // initialize map
+    tree := make(map[int][]int) // map[node][]childNodes
+    childNodeCount := make(map[int]int) // map[node]numberOfRecursedChildNodes
 
     scanner := bufio.NewScanner(os.Stdin)
     scanner.Split(bufio.ScanLines)
     scanner.Scan() // skip first entry
 
+    // read all values into tree map
     for scanner.Scan() {
         edge := strings.NewReader(scanner.Text())
         edgeScanner := bufio.NewScanner(edge)
@@ -27,29 +28,41 @@ func main() {
                 childNode = bytesToInt(edgeScanner.Bytes())
             } else {
                 parentNode = bytesToInt(edgeScanner.Bytes())
-                nodes[parentNode] = append(nodes[parentNode], childNode)
+                tree[parentNode] = append(tree[parentNode], childNode)
             }
         }
     }
 
-    fmt.Println(nodes)
-    fmt.Println(run(1, nodes, 0) - 1)
-    //run(1, nodes, 0)
+    childNodeCount = countChildNodes(1, tree, childNodeCount)
+
+    /*
+     * Find the maximum number of edges you can remove from the tree to get
+     * a forest such that each connected component of the forest contains
+     * an even number of nodes.
+     */
+    removalsPossible := 0
+    for _, val := range childNodeCount {
+        if (isEven(val)) {
+            removalsPossible++
+        }
+    }
+    fmt.Println(removalsPossible - 1)
 }
 
-func run(node int, nodes map[int][]int, evenTreesFound int) int {
-    for _, val := range nodes[node] {
-        evenTreesFound = run(val, nodes, evenTreesFound)
+/*
+ * Recurse once through the tree and store count of all child nodes
+ */
+func countChildNodes(node int, tree map[int][]int, childNodeCount map[int]int) map[int]int {
+    for _, val := range tree[node] {
+        childNodeCount = countChildNodes(val, tree, childNodeCount)
+        childNodeCount[node] += childNodeCount[val]
     }
-    if (isEvenTree(nodes[node])) {
-        evenTreesFound++
-        fmt.Println(node)
-    }
-    return evenTreesFound
+    childNodeCount[node] += len(tree[node])
+    return childNodeCount
 }
 
-func isEvenTree(childNodes []int) bool {
-    if ((len(childNodes) - 1) % 2 == 0) {
+func isEven(childNodes int) bool {
+    if ((childNodes - 1) % 2 == 0) {
         return true
     }
     return false
